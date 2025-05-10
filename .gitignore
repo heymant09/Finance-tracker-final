@@ -1,0 +1,22 @@
+# Python virtual environment
+venv/
+
+# Database
+finance.db
+finance.db.bak
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Flask environment variables
+.env
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store

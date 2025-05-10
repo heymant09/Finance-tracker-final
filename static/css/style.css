@@ -1,0 +1,100 @@
+/* Custom styles for the finance tracker dashboard */
+.container {
+    max-width: 1200px;
+}
+
+.top-transaction-card {
+    border-radius: 8px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.top-transaction-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.income-card .card-header {
+    background-color: #28a745;
+    border-bottom: none;
+}
+
+.expense-card .card-header {
+    background-color: #dc3545;
+    border-bottom: none;
+}
+
+.list-group-item {
+    border: none;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+}
+
+.list-group-item .badge {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+}
+
+.card {
+    border: none;
+}
+
+.card-header {
+    font-weight: 500;
+    font-size: 1.25rem;
+}
+
+.table {
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.btn-warning, .btn-danger {
+    transition: background-color 0.2s ease-in-out;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+    margin-right: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+.form-select[multiple] {
+    height: auto;
+    min-height: 100px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .top-transaction-card {
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header h4 {
+        font-size: 1.25rem;
+    }
+
+    .list-group-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .list-group-item .badge {
+        margin-top: 0.5rem;
+    }
+
+    .form-select[multiple] {
+        min-height: 80px;
+    }
+}
