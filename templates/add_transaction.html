@@ -64,18 +64,46 @@
         </div>
         <div class="mb-3">
             {{ form.category.label(class="form-label") }}
-            {{ form.category(class="form-select") }}
+            {{ form.category(class="form-select", id="category-select") }}
             {% if form.category.errors %}
                 {% for error in form.category.errors %}
                     <span class="text-danger">{{ error }}</span>
                 {% endfor %}
             {% endif %}
         </div>
+        <div class="mb-3" id="new-category-fields" style="display: none;">
+            {{ form.new_category.label(class="form-label") }}
+            {{ form.new_category(class="form-control") }}
+            {% if form.new_category.errors %}
+                {% for error in form.new_category.errors %}
+                    <span class="text-danger">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+            <div class="mt-2">
+                {{ form.new_category_type.label(class="form-label") }}
+                {{ form.new_category_type(class="form-select") }}
+                {% if form.new_category_type.errors %}
+                    {% for error in form.new_category_type.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
         <div class="mb-3">
             {{ form.tags.label(class="form-label") }}
             {{ form.tags(class="form-select", multiple="multiple") }}
             {% if form.tags.errors %}
                 {% for error in form.tags.errors %}
+                    <span class="text-danger">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.new_tag.label(class="form-label") }}
+            {{ form.new_tag(class="form-control") }}
+            <small class="form-text text-muted">Enter new tags separated by commas (e.g., One-Time, Important).</small>
+            {% if form.new_tag.errors %}
+                {% for error in form.new_tag.errors %}
                     <span class="text-danger">{{ error }}</span>
                 {% endfor %}
             {% endif %}
@@ -93,4 +121,15 @@
     </form>
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
 </div>
+
+<script>
+    document.getElementById('category-select').addEventListener('change', function() {
+        const newCategoryFields = document.getElementById('new-category-fields');
+        if (this.value === 'other') {
+            newCategoryFields.style.display = 'block';
+        } else {
+            newCategoryFields.style.display = 'none';
+        }
+    });
+</script>
 {% endblock %}

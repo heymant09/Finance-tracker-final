@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from forms import RegisterForm, LoginForm, TransactionForm, CategoryForm
+from forms import RegisterForm, LoginForm, TransactionForm, CategoryForm, TagForm
 from extensions import db, login_manager
 from datetime import datetime, date
 import pandas as pd
@@ -27,7 +27,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Import models after extensions are initialized
-from models import User, Transaction, Category, Tag
+from models import User, Transaction, Category, Tag, transaction_tags
 
 @app.route('/')
 def index():
@@ -52,7 +52,11 @@ def register():
             Category(name="Groceries", type="expense", user_id=user.id),
             Category(name="Utilities", type="expense", user_id=user.id)
         ]
-        db.session.add_all(default_categories)
+        default_tags = [
+            Tag(name="Recurring", user_id=user.id),
+            Tag(name="Urgent", user_id=user.id)
+        ]
+        db.session.add_all(default_categories + default_tags)
         db.session.commit()
         flash('Account created! You can now log in.', 'success')
         return redirect(url_for('login'))
@@ -170,15 +174,54 @@ def dashboard():
 def add_transaction():
     form = TransactionForm()
     if form.validate_on_submit():
+        # Handle category: existing or new
+        if form.category.data == 'other':
+            if not form.new_category.data or not form.new_category_type.data:
+                flash('New category name and type are required.', 'danger')
+                return render_template('add_transaction.html', form=form)
+            category = Category(
+                name=form.new_category.data,
+                type=form.new_category_type.data,
+                user_id=current_user.id
+            )
+            try:
+                db.session.add(category)
+                db.session.commit()
+            except:
+                db.session.rollback()
+                flash('Category name already exists.', 'danger')
+                return render_template('add_transaction.html', form=form)
+            category_id = category.id
+        else:
+            category_id = int(form.category.data)
+
+        # Handle new tags
+        new_tags = []
+        if form.new_tag.data:
+            tag_names = [name.strip() for name in form.new_tag.data.split(',') if name.strip()]
+            for name in tag_names:
+                tag = Tag.query.filter_by(name=name, user_id=current_user.id).first()
+                if not tag:
+                    tag = Tag(name=name, user_id=current_user.id)
+                    try:
+                        db.session.add(tag)
+                        db.session.commit()
+                    except:
+                        db.session.rollback()
+                        flash(f'Tag "{name}" already exists.', 'danger')
+                        continue
+                new_tags.append(tag)
+
+        # Create transaction
         txn = Transaction(
             date=form.date.data or datetime.today(),
             amount=form.amount.data,
-            category_id=form.category.data,
+            category_id=category_id,
             description=form.description.data,
             user_id=current_user.id
         )
-        # Assign selected tags
-        selected_tags = Tag.query.filter(Tag.id.in_(form.tags.data)).all()
+        # Assign selected tags (existing + new)
+        selected_tags = Tag.query.filter(Tag.id.in_(form.tags.data)).all() + new_tags
         txn.tags = selected_tags
         db.session.add(txn)
         db.session.commit()
@@ -197,11 +240,50 @@ def edit_transaction(txn_id):
     
     form = TransactionForm()
     if form.validate_on_submit():
+        # Handle category: existing or new
+        if form.category.data == 'other':
+            if not form.new_category.data or not form.new_category_type.data:
+                flash('New category name and type are required.', 'danger')
+                return render_template('edit_transaction.html', form=form, txn=txn)
+            category = Category(
+                name=form.new_category.data,
+                type=form.new_category_type.data,
+                user_id=current_user.id
+            )
+            try:
+                db.session.add(category)
+                db.session.commit()
+            except:
+                db.session.rollback()
+                flash('Category name already exists.', 'danger')
+                return render_template('edit_transaction.html', form=form, txn=txn)
+            category_id = category.id
+        else:
+            category_id = int(form.category.data)
+
+        # Handle new tags
+        new_tags = []
+        if form.new_tag.data:
+            tag_names = [name.strip() for name in form.new_tag.data.split(',') if name.strip()]
+            for name in tag_names:
+                tag = Tag.query.filter_by(name=name, user_id=current_user.id).first()
+                if not tag:
+                    tag = Tag(name=name, user_id=current_user.id)
+                    try:
+                        db.session.add(tag)
+                        db.session.commit()
+                    except:
+                        db.session.rollback()
+                        flash(f'Tag "{name}" already exists.', 'danger')
+                        continue
+                new_tags.append(tag)
+
+        # Update transaction
         txn.date = form.date.data or datetime.today()
         txn.amount = form.amount.data
-        txn.category_id = form.category.data
+        txn.category_id = category_id
         txn.description = form.description.data
-        txn.tags = Tag.query.filter(Tag.id.in_(form.tags.data)).all()
+        txn.tags = Tag.query.filter(Tag.id.in_(form.tags.data)).all() + new_tags
         db.session.commit()
         flash('Transaction updated successfully.', 'success')
         return redirect(url_for('dashboard'))
@@ -209,9 +291,10 @@ def edit_transaction(txn_id):
     if request.method == 'GET':
         form.date.data = txn.date
         form.amount.data = txn.amount
-        form.category.data = txn.category_id
+        form.category.data = str(txn.category_id)
         form.description.data = txn.description
         form.tags.data = [tag.id for tag in txn.tags]
+        form.new_tag.data = ''
     
     return render_template('edit_transaction.html', form=form, txn=txn)
 
@@ -263,6 +346,42 @@ def delete_category(category_id):
         db.session.commit()
         flash('Category deleted successfully.', 'success')
     return redirect(url_for('manage_categories'))
+
+@app.route('/tags', methods=['GET', 'POST'])
+@login_required
+def manage_tags():
+    form = TagForm()
+    if form.validate_on_submit():
+        tag = Tag(
+            name=form.name.data,
+            user_id=current_user.id
+        )
+        try:
+            db.session.add(tag)
+            db.session.commit()
+            flash('Tag added successfully.', 'success')
+        except:
+            db.session.rollback()
+            flash('Tag name already exists.', 'danger')
+        return redirect(url_for('manage_tags'))
+    
+    tags = Tag.query.filter_by(user_id=current_user.id).order_by(Tag.name).all()
+    return render_template('tags.html', form=form, tags=tags)
+
+@app.route('/tags/delete/<int:tag_id>')
+@login_required
+def delete_tag(tag_id):
+    tag = Tag.query.get_or_404(tag_id)
+    if tag.user_id != current_user.id:
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('manage_tags'))
+    if tag.transactions:
+        flash('Cannot delete tag with associated transactions.', 'danger')
+    else:
+        db.session.delete(tag)
+        db.session.commit()
+        flash('Tag deleted successfully.', 'success')
+    return redirect(url_for('manage_tags'))
 
 if __name__ == "__main__":
     with app.app_context():

@@ -25,6 +25,7 @@
 
 .list-group-item {
     border: none;
+June 8, 2023 - 10:25am
     padding: 1rem;
     background-color: #f8f9fa;
     margin-bottom: 0.5rem;
@@ -75,6 +76,16 @@
     min-height: 100px;
 }
 
+#new-category-fields {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.form-control#id_new_tag {
+    margin-top: 0.5rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .top-transaction-card {
@@ -96,5 +107,13 @@
 
     .form-select[multiple] {
         min-height: 80px;
+    }
+
+    #new-category-fields {
+        padding: 0.75rem;
+    }
+
+    .form-control#id_new_tag {
+        margin-top: 0.75rem;
     }
 }
